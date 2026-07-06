@@ -6,6 +6,7 @@ import {
   updateProject,
   updateProjectStatus,
 } from '../api/projects.api'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { EmptyState } from '../components/EmptyState'
 import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
@@ -13,6 +14,7 @@ import { Modal } from '../components/Modal'
 import { ProjectDetail } from '../components/ProjectDetail'
 import { ProjectForm } from '../components/ProjectForm'
 import { ProjectList } from '../components/ProjectList'
+import { useToast } from '../components/Toast'
 import { useProjects } from '../hooks/useProjects'
 import type { CreateProjectDto, Project, ProjectStatus } from '../types/project'
 
@@ -23,8 +25,13 @@ interface DetailModalState {
   autoGenerateAnalysis: boolean
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof ApiError ? err.message : fallback
+}
+
 export function ProjectsPage() {
   const { projects, isLoading, error, refetch } = useProjects()
+  const { showSuccess, showError } = useToast()
 
   const [formModal, setFormModal] = useState<FormModalState>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,7 +40,8 @@ export function ProjectsPage() {
   const [detailModal, setDetailModal] = useState<DetailModalState | null>(null)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [projectPendingDeletion, setProjectPendingDeletion] = useState<Project | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   async function handleFormSubmit(values: CreateProjectDto) {
     setIsSubmitting(true)
@@ -41,30 +49,32 @@ export function ProjectsPage() {
     try {
       if (formModal?.mode === 'edit') {
         await updateProject(formModal.project.id, values)
+        showSuccess('Projeto atualizado com sucesso.')
       } else {
         await createProject(values)
+        showSuccess('Projeto criado com sucesso.')
       }
       setFormModal(null)
       await refetch()
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : 'Falha ao salvar o projeto.')
+      setSubmitError(extractErrorMessage(err, 'Falha ao salvar o projeto.'))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  async function handleDelete(project: Project) {
-    const confirmed = window.confirm(`Remover o projeto "${project.nome}"?`)
-    if (!confirmed) return
-
-    setDeleteError(null)
+  async function handleConfirmDelete() {
+    if (!projectPendingDeletion) return
+    setIsDeleting(true)
     try {
-      await deleteProject(project.id)
+      await deleteProject(projectPendingDeletion.id)
+      showSuccess('Projeto removido com sucesso.')
+      setProjectPendingDeletion(null)
       await refetch()
     } catch (err) {
-      setDeleteError(
-        err instanceof ApiError ? err.message : 'Falha ao remover o projeto.',
-      )
+      showError(extractErrorMessage(err, 'Falha ao remover o projeto.'))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -74,11 +84,14 @@ export function ProjectsPage() {
     try {
       const updated = await updateProjectStatus(detailModal.project.id, nextStatus)
       setDetailModal({ ...detailModal, project: updated, autoGenerateAnalysis: false })
+      showSuccess(
+        nextStatus === 'CANCELADO'
+          ? 'Projeto cancelado com sucesso.'
+          : 'Status do projeto atualizado com sucesso.',
+      )
       await refetch()
     } catch (err) {
-      window.alert(
-        err instanceof ApiError ? err.message : 'Falha ao atualizar o status do projeto.',
-      )
+      showError(extractErrorMessage(err, 'Falha ao atualizar o status do projeto.'))
     } finally {
       setIsUpdatingStatus(false)
     }
@@ -109,12 +122,6 @@ export function ProjectsPage() {
         </button>
       </div>
 
-      {deleteError && (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {deleteError}
-        </div>
-      )}
-
       {isLoading && <LoadingState label="Carregando projetos..." />}
 
       {!isLoading && error && <ErrorState message={error} onRetry={refetch} />}
@@ -141,7 +148,7 @@ export function ProjectsPage() {
             setSubmitError(null)
             setFormModal({ mode: 'edit', project })
           }}
-          onDelete={handleDelete}
+          onDelete={setProjectPendingDeletion}
           onRequestAiAnalysis={(project) =>
             setDetailModal({ project, autoGenerateAnalysis: true })
           }
@@ -171,6 +178,18 @@ export function ProjectsPage() {
           onCancelProject={handleCancelProject}
           isUpdatingStatus={isUpdatingStatus}
           autoGenerateAnalysis={detailModal.autoGenerateAnalysis}
+        />
+      )}
+
+      {projectPendingDeletion && (
+        <ConfirmDialog
+          title="Remover projeto"
+          message={`Tem certeza que deseja remover o projeto "${projectPendingDeletion.nome}"? Essa ação não pode ser desfeita.`}
+          confirmLabel="Remover"
+          isDanger
+          isConfirming={isDeleting}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setProjectPendingDeletion(null)}
         />
       )}
     </div>

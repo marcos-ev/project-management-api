@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      AI_PROVIDER: mock
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:3000
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend

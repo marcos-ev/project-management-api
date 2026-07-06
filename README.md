@@ -7,7 +7,7 @@ O sistema é dividido em dois projetos independentes:
 - [`backend/`](backend) — API REST em Node.js com NestJS.
 - [`frontend/`](frontend) — aplicação em React + TypeScript.
 
-Consulte também o [`AI_USAGE.md`](AI_USAGE.md) para o detalhamento do uso de IA na elaboração desta solução.
+Consulte também o [`AI_USAGE.md`](AI_USAGE.md) para o detalhamento do uso de IA na elaboração desta solução, e o [`ARCHITECTURE.md`](ARCHITECTURE.md) para diagramas do fluxo de status, risco e análise de IA.
 
 ## Stack
 
@@ -55,6 +55,23 @@ npm run dev
 A aplicação sobe em `http://localhost:5173` e consome a API através da variável `VITE_API_URL` (default `http://localhost:3000`, definida em `frontend/.env.example`).
 
 > O backend precisa estar rodando para o frontend funcionar por completo — sem ele, a listagem exibe o estado de erro com opção de tentar novamente.
+
+### Alternativa: Docker Compose
+
+Para rodar backend e frontend juntos com um único comando, sem instalar Node localmente:
+
+```bash
+docker compose up --build
+```
+
+- API em `http://localhost:3000` (Swagger em `http://localhost:3000/docs`).
+- Frontend em `http://localhost:5173` (servido via Nginx, já buildado apontando para a API acima).
+
+Para derrubar: `docker compose down`.
+
+## Continuous Integration
+
+O repositório possui um workflow de CI (`.github/workflows/ci.yml`) que, a cada push/PR na branch `main`, roda lint, testes unitários e build tanto do backend quanto do frontend, garantindo que o projeto sempre compila e passa nos testes.
 
 ## Estrutura do repositório
 

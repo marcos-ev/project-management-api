@@ -15,6 +15,7 @@ Assistente de IA baseado no modelo **Claude (Sonnet)**, operando dentro de um am
 - **Geração da documentação** (Swagger via decorators, este `AI_USAGE.md` e o `README.md`).
 - **Validação funcional**: subida real do backend e do frontend, testes via `curl` dos endpoints (incluindo cenários de erro: transição inválida, exclusão bloqueada, 404) e verificação visual do frontend integrado à API real por meio de automação de browser.
 - **Revisão final**: varredura do repositório em busca de comentários desnecessários e de qualquer referência indevida a nomes de ferramentas ou empresas.
+- **Melhorias adicionais** (após a entrega inicial, decisão minha de aprofundar o diferencial técnico): pipeline de CI no GitHub Actions, containerização com Docker/Docker Compose, substituição de `window.confirm`/`window.alert` por um modal de confirmação e um sistema de notificações (toasts) no frontend, e um `ARCHITECTURE.md` com diagramas do fluxo de status/risco/IA. Todas essas adições foram testadas manualmente (build, lint, `docker compose up` de ponta a ponta, navegação real no browser) antes de serem consideradas concluídas.
 
 Eu não usei IA para tomar decisões de negócio — as regras de risco, de transição de status e o contrato de API vieram diretamente da leitura do enunciado do desafio; a IA foi usada para *implementar* essas regras, não para *defini-las*.
 
